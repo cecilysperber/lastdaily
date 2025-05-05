@@ -1,0 +1,27 @@
+"0","library(terra)"
+"2","Warning: package ‘terra’ was built under R version 4.4.3"
+"2","terra 1.8.42
+"
+"2","
+Attaching package: ‘terra’
+
+"
+"2","The following object is masked from ‘package:tidyr’:
+
+    extract
+
+"
+"0","url <- 'https://raw.githubusercontent.com/mikejohnson51/csu-ess-330/refs/heads/main/resources/foco-elev-cm.tif'"
+"0","download.file(url, destfile = ""foco-elev-cm.tif"", mode = ""wb"")"
+"2","trying URL 'https://raw.githubusercontent.com/mikejohnson51/csu-ess-330/refs/heads/main/resources/foco-elev-cm.tif'
+"
+"2","Content type 'image/tiff'"
+"2"," length 1078451 bytes (1.0 MB)
+"
+"2","downloaded 1.0 MB
+
+"
+"0","dem <- rast(""foco-elev-cm.tif"")"
+"0",""
+"0","dem_m <- dem / 100"
+"0",""

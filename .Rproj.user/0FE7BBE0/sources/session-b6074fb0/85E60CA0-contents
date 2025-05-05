@@ -1,0 +1,40 @@
+---
+title: "Daily Assignment 26"
+subtitle: "ESS 330"
+author: "Cecily Sperber"
+email: csperber@colostate.edu
+format:
+  html:
+    self-contained: true
+execute:
+  echo: true
+---
+
+```{r}
+library(terra)  
+
+url <- 'https://raw.githubusercontent.com/mikejohnson51/csu-ess-330/refs/heads/main/resources/foco-elev-cm.tif'
+
+download.file(url, destfile = "foco-elev-cm.tif", mode = "wb")
+
+elevation_raster <- rast("foco-elev-cm.tif")
+
+summary(elevation_raster)
+
+elevation_raster_ft <- elevation_raster * 0.0328084
+
+elevation_df <- as.data.frame(values(elevation_raster_ft), na.rm = TRUE)
+colnames(elevation_df) <- 'elevation_ft'
+
+library(ggpubr)
+
+density_plot <- ggplot(elevation_df, aes(x = elevation_ft)) +
+  geom_density(fill = "blue", alpha = 0.5) +
+  labs(title = "Density Plot of Elevation in Feet", x = "Elevation (ft)", y = "Density") +
+  theme_minimal()
+
+print(density_plot)
+
+ggsave("img/map_26.png", plot = density_plot, width = 8, height = 6)
+
+```

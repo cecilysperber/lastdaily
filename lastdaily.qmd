@@ -1,0 +1,129 @@
+---
+title: "Last Daily Assignment 27 and 28"
+subtitle: "ESS 330"
+author: "Cecily Sperber"
+email: csperber@colostate.edu
+format:
+  html:
+    self-contained: true
+execute:
+  echo: true
+---
+
+# Define River Object
+```{r}
+library(tidyverse)
+library(sf)
+library(osmdata)
+
+bbox <- getbb("Fort Collins, Colorado")
+
+waterways <- opq(bbox = bbox) %>%
+  add_osm_feature(key = "waterway") %>%
+  osmdata_sf()
+
+poudre_river <- waterways$osm_lines %>%
+  filter(str_detect(name, "Cache la Poudre"))
+
+poudre_river_union <- st_union(poudre_river)
+
+poudre_river_sf <- st_as_sf(poudre_river_union)
+
+river_length <- st_length(poudre_river_sf)
+
+poudre_pts <- st_cast(poudre_river_sf, "POINT")
+
+```
+
+# Define DEM Object
+```{r}
+library(terra)
+
+url <- 'https://raw.githubusercontent.com/mikejohnson51/csu-ess-330/refs/heads/main/resources/foco-elev-cm.tif'
+download.file(url, destfile = "foco-elev-cm.tif", mode = "wb")
+
+dem <- rast("foco-elev-cm.tif")
+
+dem_m <- dem / 100
+
+```
+
+# Extract River Profile
+```{r}
+elevation <- terra::extract(dem_m, vect(poudre_pts))
+
+library(dplyr)
+
+poudre_profile <- bind_cols(poudre_pts, elevation)
+
+colnames(poudre_profile)[which(names(poudre_profile) == names(dem_m))] <- "elevation_m"
+
+poudre_profile <- poudre_profile %>%
+  mutate(ID = row_number())
+
+```
+
+# Compute Sinuosity
+```{r}
+library(sf)
+
+start_point <- st_geometry(poudre_profile)[1]
+end_point <- st_geometry(poudre_profile)[nrow(poudre_profile)]
+
+straight_distance <- st_distance(start_point, end_point)
+
+river_len_m <- as.numeric(river_length)      
+straight_len_m <- as.numeric(straight_distance) 
+
+sinuosity <- river_len_m / straight_len_m
+sinuosity
+
+```
+
+# Compute Slope
+```{r}
+poudre_clean <- poudre_profile %>% filter(!is.na(elevation_m))
+
+elev_start <- poudre_clean$elevation_m[1]
+elev_end <- poudre_clean$elevation_m[nrow(poudre_clean)]
+
+elev_diff <- elev_start - elev_end  
+
+river_len_m <- as.numeric(river_length)
+
+slope <- elev_diff / river_len_m
+
+slope
+
+```
+
+# Map Profile 
+```{r}
+library(ggplot2)
+
+ggplot(poudre_clean, aes(x = ID, y = elevation_m)) +
+  geom_line(color = "steelblue", size = 1) +
+  labs(
+    title = "River Elevation Profile – Cache la Poudre River",
+    x = "Point ID (from upstream to downstream)",
+    y = "Elevation (m)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12)
+  )
+
+ggplot(poudre_clean) +
+  geom_sf(aes(color = elevation_m), size = 1) +
+  scale_color_viridis_c(name = "Elevation (m)") +
+  labs(
+    title = "Cache la Poudre River Path Colored by Elevation"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold")
+  )
+
+```
+
